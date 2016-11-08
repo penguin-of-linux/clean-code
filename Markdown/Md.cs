@@ -15,8 +15,8 @@ namespace Markdown {
             return new string[] { };
         }
 
-        protected string ConvertFieldToHTML(string field) {
-            return "";
+        protected FieldType GetFieldType(string field) {
+            return FieldType.ItalicBegin;
         }
     }
 }

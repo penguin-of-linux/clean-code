@@ -7,17 +7,20 @@ namespace MarkdownTests {
     [TestFixture]
     public class MarkdownTest : Md {
 
-        [Test]
-        public void Render_EmptyText() {
-            var text = Render("");
-            Assert.AreEqual("", text);
+        [TestCase("_pen pineapple apple pen_", ExpectedResult = "<i>pen pineapple apple pen</i>")]
+        public string Render(string text) {
+            return Render(text);
         }
 
-        [Test]
-        public void GetAllFields() {
-            var text = "";
-            var fields = GetAllFields(text);
-            Assert.AreEqual(0, fields.Length);
+        [TestCase("pen apple _apple pen_ __pineapple __" , 
+            ExpectedResult = new string[] { "pen", "apple", "_apple", "pen_", "__pineapple", "__" })]
+        public string[] GetAllFields(string text) {
+            return base.GetAllFields(text);
+        }
+
+        [TestCase("_apple", ExpectedResult = FieldType.ItalicBegin)]
+        public FieldType GetFieldType(string field) {
+            return base.GetFieldType(field);
         }
     }
 }
