@@ -18,11 +18,41 @@ namespace MarkdownTests {
             return base.GetAllFields(text);
         }
 
-        [TestCase("_apple", ExpectedResult = FieldType.Italic)]
-        [TestCase("apple__", ExpectedResult = FieldType.Strong)]
-        [TestCase("_apple__", ExpectedResult = FieldType.StrongItalic)]
-        public FieldType GetFieldType(string field) {
-            return base.GetFieldType(field);
+        [TestCase("_apple", ExpectedResult = new FieldType[] { FieldType.ItalicBegin })]
+        [TestCase("apple_pen", ExpectedResult = new FieldType[] { FieldType.ItalicBegin, FieldType.ItalicEnd })]
+        [TestCase("apple__", ExpectedResult = new FieldType[] { FieldType.StrongEnd })]
+        [TestCase("_apple__", new FieldType[] { FieldType.ItalicBegin, FieldType.StrongEnd })]
+        [TestCase("_apple__", new FieldType[] { FieldType.ItalicBegin, FieldType.StrongEnd }
+        )]
+        [TestCase("apple_pen__pineapple", new FieldType[] {
+            FieldType.ItalicBegin,
+            FieldType.ItalicEnd,
+            FieldType.StrongBegin,
+            FieldType.StrongEnd }
+        )]
+        [TestCase("penpineappleapplepen", new FieldType[] { FieldType.Simple})]
+        [TestCase("*apple** pen", ExpectedResult = "<i>apple</i>* pen")]
+        [TestCase("**apple__ pen", ExpectedResult = "<b>apple</b> pen")]
+        public FieldType[] GetFieldType(string field) {
+            return base.GetFieldTypes(field);
+        }
+
+        [TestCase("_apple_ pen", ExpectedResult = "<i>apple</i> pen")]
+        [TestCase("_apple__ pen", ExpectedResult = "<i>apple</i>_ pen")]
+        public string ConvertToItalic(string field) {
+            return field.ConvertToItalic();
+        }
+
+        [TestCase("__apple__ pen", ExpectedResult = "<b>apple</b> pen")]
+        [TestCase("__apple_pen__", ExpectedResult = "<b>apple_pen</b>")]
+        public string ConvertToStrong(string field) {
+            return field.ConvertToStrong();
+        }
+
+        [TestCase("~~apple~~ pen", ExpectedResult = "<strike>apple</strike> pen")]
+        [TestCase("~~__apple_pen__~~", ExpectedResult = "<strike>__apple_pen__</strike>")]
+        public string ConvertToStrike(string field) {
+            return field.ConvertToStrong();
         }
     }
 }

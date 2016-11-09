@@ -1,5 +1,9 @@
 ﻿namespace Markdown {
     public enum FieldType {
-        ItalicBegin
+        ItalicBegin,
+        ItalicEnd,
+        StrongBegin,
+        StrongEnd,
+        Simple
     }
 }
