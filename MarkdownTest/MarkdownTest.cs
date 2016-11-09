@@ -18,7 +18,9 @@ namespace MarkdownTests {
             return base.GetAllFields(text);
         }
 
-        [TestCase("_apple", ExpectedResult = FieldType.ItalicBegin)]
+        [TestCase("_apple", ExpectedResult = FieldType.Italic)]
+        [TestCase("apple__", ExpectedResult = FieldType.Strong)]
+        [TestCase("_apple__", ExpectedResult = FieldType.StrongItalic)]
         public FieldType GetFieldType(string field) {
             return base.GetFieldType(field);
         }
