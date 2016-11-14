@@ -20,8 +20,9 @@ namespace MarkdownTest {
         [TestCase("___", ExpectedResult = new TagType[] { })]
         [TestCase("___apple", ExpectedResult = new TagType[] { TagType.Strong, TagType.Italic})]
         [TestCase("apple\\_pen\\_", ExpectedResult = new TagType[] { })]
+        [TestCase("_pen_apple_pen", ExpectedResult = new TagType[] {TagType.Italic, TagType.Italic, TagType.Italic})]
         public TagType[] InitFieldTypes(string text) {
-            return new Field(text).tags.Select(t => t.Item2).ToArray();
+            return new Field(text).tags.Select(t => t.type).ToArray();
         }
     }
 }

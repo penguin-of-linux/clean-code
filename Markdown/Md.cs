@@ -6,59 +6,46 @@ using System.Threading.Tasks;
 
 namespace Markdown {
     public class Md {
-        private Stack<Tuple<Field, int, TagType>> tagsStack = new Stack<Tuple<Field, int, TagType>>();
         public string Render(string text) {
+            /* Изначально была выбрана неправильная стретегия, из-за этого не успел вовремя,
+             * да и не вовремя тоже не успел.
+             * А может просто из-за кривых рук :(
+            */
             var fields = GetAllFields(text);
+            var tagFieldStack = new Stack<Tuple<Field, Tag>>();
 
-            foreach(var field in fields) {
+            foreach (var field in fields) {
                 foreach (var tag in field.tags) {
-                    if (IsBeginTag(field.text, tag.Item1)) {
-                        tagsStack.Push(new Tuple<Field, int, TagType>(field, tag.Item1, tag.Item2));
+                    if (IsEndTag(field.text, tag.pos)) {
+                        if (tagFieldStack.Any(t => t.Item2.type == tag.type)) {
+                            while (tagFieldStack.Peek().Item2.type != tag.type) tagFieldStack.Pop();
+                            var otherPair = tagFieldStack.Pop();
+                            ConvertTwoFieldsToHtmlTag(otherPair.Item1, field, otherPair.Item2, tag);
+                            continue;
+                        }
                     }
-
-                    if (IsEndTag(field.text, tag.Item1)) {
-                        if (tagsStack.Any(t => t.Item3 == tag.Item2))
-                            while (tagsStack.Peek().Item3 != tag.Item2)
-                                tagsStack.Pop();
-                        var temp = tagsStack.Pop();
-                        ConvertTwoFieldsToTag(temp.Item1, field, temp.Item2, tag.Item1, tag.Item2);
+                    if (IsBeginTag(field.text, tag.pos)) {
+                        tagFieldStack.Push(new Tuple<Field, Tag>(field, tag));
                     }
                 }
             }
 
-            var result = fields[0].text;
-            foreach (var field in fields)
-                result += " " + field.text;
-            return result;
+            return fields.Select(f => f.text).Aggregate((x, y) => x + " " + y);
         }
 
-        protected void ConvertTwoFieldsToTag(Field field1, Field field2, int pos1, int pos2, TagType tagType) {
-            string type = null;
-            switch (tagType) {
-                case TagType.Italic: type = "<i>"; break;
-                case TagType.Strong: type = "<b>"; break;
+        protected void ConvertTwoFieldsToHtmlTag(Field field1, Field field2, Tag tag1, Tag tag2) {
+            string htmlTag = null;
+            int tagLength = 0;
+            switch (tag1.type) {
+                case TagType.Italic: htmlTag = "<i>"; tagLength = 1; break;
+                case TagType.Strong: htmlTag = "<b>"; tagLength = 2; break;
             }
-            field1.text = field1.text.Remove(pos1, 1).Insert(pos1, type);
-            field2.text = field2.text.Remove(pos2, 1).Insert(pos2, type.Insert(1, "/"));
+
+            if (field1 == field2) tag2.pos += 3 - tagLength;    //3 - length of html tag
+
+            field1.text = field1.text.Remove(tag1.pos, tagLength).Insert(tag1.pos, htmlTag);
+            field2.text = field2.text.Remove(tag2.pos, tagLength).Insert(tag2.pos, htmlTag.Insert(1, "/"));
         }
-
-        /*protected void ConvertTwoFieldsToTag(ref string first, ref string second, string tag) {
-            var index = -1;
-            for (int i = 0; i < first.Length; i++)
-                if (first[i] == tag[tag.Length-1] && IsBeginTag(first, i)) {
-                    index = i;
-                    break;
-                }
-            first = first.Remove(index, 1).Insert(index, "<i>");
-
-            for (int i = 0; i < second.Length; i++)
-                if (second[i] == tag[0] && IsEndTag(second, i)) {
-                    index = i;
-                    break;
-                }
-
-            second = second.Remove(index, 1).Insert(index, "</i>");
-        }*/
 
         protected Field[] GetAllFields(string text) {
             return text.Split(' ').Select(s => new Field(s)).ToArray();

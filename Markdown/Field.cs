@@ -7,29 +7,24 @@ using System.Threading.Tasks;
 namespace Markdown {
     public class Field {
         public string text;
-        public List<Tuple<int, TagType>> tags = new List<Tuple<int, TagType>>();
+        public List<Tag> tags = new List<Tag>();
         public Field(string text) {
             this.text = text;
             InitFieldTypes();
         }
 
-        protected TagType[] InitFieldTypes() {
-            if (IsDashString(text)) return new TagType[0];
-            var result = new List<TagType>();
+        protected Tag[] InitFieldTypes() {
+            if (IsDashString(text)) return new Tag[0];
+            var result = new List<Tag>();
             for (int i = 0; i < text.Length; i++) {
                 if (text[i] == '\\') {
-                    i++;
+                    text = text.Remove(i, 1);
                     continue;
                 }
-                if (text[i] == '_') {
-                    if (IsTagStrong(text, i)) {
-                        tags.Add(new Tuple<int, TagType>(i, TagType.Strong));
-                        i++;
-                    }
-                    else {
-                        tags.Add(new Tuple<int, TagType>(i, TagType.Italic));
-                    }
-                }
+                var newTag = CreateTag(text, i);
+                if (newTag == null) continue;
+                if (newTag.type == TagType.Strong) i++;
+                tags.Add(newTag);
             }
             return result.ToArray();
         }
@@ -40,6 +35,16 @@ namespace Markdown {
 
         private bool IsDashString(string field) {
             return field.All(sym => sym == '_');
+        }
+
+        private Tag CreateTag(string text, int pos) {
+            if (text[pos] == '_') {
+                if (IsTagStrong(text, pos)) {
+                    return new Tag(pos, TagType.Strong);
+                }
+                else return new Tag(pos, TagType.Italic);
+            }
+            return null;
         }
     }
 }
