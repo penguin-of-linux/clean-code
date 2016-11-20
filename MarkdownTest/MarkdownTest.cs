@@ -51,7 +51,7 @@ namespace MarkdownTests {
             var field1 = new Field(text1);
             var field2 = new Field(text2);
             base.ConvertTwoFieldsToHtmlTag(field1, field2, new Tag(pos1, type), new Tag(pos2, type));
-            return field1.text + " " + field2.text;
+            return field1.Text + " " + field2.Text;
         }
     }
 }

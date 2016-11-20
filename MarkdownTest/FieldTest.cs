@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using Markdown;
 using NUnit.Framework;
 
@@ -22,7 +18,7 @@ namespace MarkdownTest {
         [TestCase("apple\\_pen\\_", ExpectedResult = new TagType[] { })]
         [TestCase("_pen_apple_pen", ExpectedResult = new TagType[] {TagType.Italic, TagType.Italic, TagType.Italic})]
         public TagType[] InitFieldTypes(string text) {
-            return new Field(text).tags.Select(t => t.type).ToArray();
+            return new Field(text).Tags.Select(t => t.Type).ToArray();
         }
     }
 }
