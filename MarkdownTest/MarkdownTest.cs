@@ -28,6 +28,17 @@ namespace MarkdownTests {
             return base.Render(text);
         }
 
+        [TestCase("_applepen_", "", "myclass", 
+            ExpectedResult = "<i class=\"myclass\">applepen</i>",
+            TestName = "Simple CSS class test")]
+        [TestCase("_apple_ __pen__ [link] (google.com)", "", "myclass", 
+            ExpectedResult = "<i class=\"myclass\">apple</i> <b class=\"myclass\">pen</b> <a href=\"google.com\" class=\"myclass\">link</a>",
+            TestName = "Hard CSS class test")]
+        public string Render_WithSettings(string text, string baseURL, string CSSClass) {
+            settings = new Settings(baseURL, CSSClass);
+            return base.Render(text);
+        }
+
         [TestCase("_apple_", 0, ExpectedResult = true, TestName = "Begin italic tag is begin tag")]
         [TestCase("_apple_", 6, ExpectedResult = false, TestName = "End italic tag is not begin tag")]
         [TestCase("__apple__", 0, ExpectedResult = true, TestName = "Begin strong tag is begin tag")]
@@ -56,7 +67,7 @@ namespace MarkdownTests {
         public string ConvertTwoFieldsToTag(string text, int pos1, int pos2, TagType type) {
             var tag1 = new Tag(pos1, type);
             var tag2 = new Tag(pos2, type);
-            base.ConvertTwoTagsToHtmlTags(ref text, tag1, tag2);
+            base.ConvertTwoTagsToHtmlTag(ref text, tag1, tag2);
             return text;
         }
     }

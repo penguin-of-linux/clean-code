@@ -5,6 +5,7 @@ using System.Text;
 
 namespace Markdown {
     public class Md {
+        public Settings settings = new Settings("", "");
         public string Render(string text) {
             if (IsUnderscoreString(text)) return text;
             var tags = new Stack<Tag>();
@@ -32,13 +33,13 @@ namespace Markdown {
             if (tags.Any(t => t.Type == tag.Type)) {
                 while (tags.Peek().Type != tag.Type) tags.Pop();
                 var otherTag = tags.Pop();
-                ConvertTwoTagsToHtmlTags(ref text, otherTag, tag);
+                ConvertTwoTagsToHtmlTag(ref text, otherTag, tag);
                 return true;
             }
             return false;
         }
 
-        private string SliceLinkAdvancedInfo(ref string text, int pos) {
+        private string CutLink(ref string text, int pos) {
             var result = new StringBuilder();
             while (true) {
                 result.Append(text[pos]);
@@ -52,7 +53,7 @@ namespace Markdown {
             return String.Format(" href=\"{0}\"", result.ToString());
         }
 
-        protected void ConvertTwoTagsToHtmlTags(ref string text, Tag tag1, Tag tag2) {
+        protected void ConvertTwoTagsToHtmlTag(ref string text, Tag tag1, Tag tag2) {
             string htmlTag = null;
             int tagLength = 0;
             switch (tag1.Type) {
@@ -60,7 +61,8 @@ namespace Markdown {
                 case TagType.Strong: htmlTag = "<b>"; tagLength = Tag.StrongTagLength; break;
                 case TagType.Link: htmlTag = "<a>"; tagLength = Tag.LinkTagLength; break;
             }
-
+            if (settings.CSSClass != "")
+                tag2.AdvancedInfo += String.Format(" class=\"{0}\"", settings.CSSClass);
             tag2.Pos += tag2.AdvancedInfo.Length + 3 - tagLength;    //3 - length of html tag
 
             text = text
@@ -97,7 +99,7 @@ namespace Markdown {
                 if (Tag.IsEndTag(text, pos)) {
                     var i = pos;
                     while (text[i+1] != '(') i++;
-                    var advancedInfo = SliceLinkAdvancedInfo(ref text, i);
+                    var advancedInfo = CutLink(ref text, i);
                     return new Tag(pos, TagType.Link, advancedInfo);
                 }
                 return new Tag(pos, TagType.Link);

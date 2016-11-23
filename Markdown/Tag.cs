@@ -19,16 +19,16 @@ namespace Markdown {
             AdvancedInfo = advancedInfo;
         }
 
-        public static bool IsBeginTag(string field, int pos) {
-            return pos != field.Length - 1
-                && !string.IsNullOrWhiteSpace(field[pos + 1].ToString())
-                && BeginTags.Contains(field[pos]);
+        public static bool IsBeginTag(string text, int pos) {
+            return pos != text.Length - 1
+                && !string.IsNullOrWhiteSpace(text[pos + 1].ToString())
+                && BeginTags.Contains(text[pos]);
         }
 
-        public static bool IsEndTag(string field, int pos) {
+        public static bool IsEndTag(string text, int pos) {
             return pos != 0
-                && !string.IsNullOrWhiteSpace(field[pos - 1].ToString())
-                && CloseTags.Contains(field[pos]);
+                && !string.IsNullOrWhiteSpace(text[pos - 1].ToString())
+                && CloseTags.Contains(text[pos]);
         }
     }
 }
