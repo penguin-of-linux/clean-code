@@ -21,7 +21,10 @@ namespace MarkdownTests {
             ExpectedResult = "<b>apple <i>pineapple pen</i> pen</b>",
             TestName = "Inserted italic")]
         [TestCase("_app\\_le_", ExpectedResult = "<i>app_le</i>", TestName = "Slesh test")]
+        [TestCase("[apple pen] (google.com)", ExpectedResult = "<a href=\"google.com\">apple pen</a>")]
         public string Render(string text) {
+            if (text == "[apple pen] (google.com)")
+                ;
             return base.Render(text);
         }
 
@@ -31,7 +34,7 @@ namespace MarkdownTests {
         [TestCase("__apple__", 8, ExpectedResult = false, TestName = "End strong tag is not begin tag")]
         [TestCase("__apple_pen__", 7, ExpectedResult = true, TestName = "Middle tag is begin tag")]
         public bool IsBeginTag(string field, int pos) {
-            return base.IsBeginTag(field, pos);
+            return Tag.IsBeginTag(field, pos);
         }
 
 
@@ -41,17 +44,20 @@ namespace MarkdownTests {
         [TestCase("__apple__", 8, ExpectedResult = true, TestName = "End strong tag is end tag")]
         [TestCase("__apple_pen__", 7, ExpectedResult = true, TestName = "Middle tag is end tag")]
         public bool IsEndTag(string field, int pos) {
-            return base.IsEndTag(field, pos);
+            return Tag.IsEndTag(field, pos);
         }
 
-        [TestCase("_apple", "pen_", 0, 3, TagType.Italic,
+        [TestCase("_apple pen_", 0, 10, TagType.Italic,
             ExpectedResult = "<i>apple pen</i>",
-            TestName = "Simple Convert two fields to tag test")]
-        public string ConvertTwoFieldsToTag(string text1, string text2, int pos1, int pos2, TagType type) {
-            var field1 = new Field(text1);
-            var field2 = new Field(text2);
-            base.ConvertTwoFieldsToHtmlTag(field1, field2, new Tag(pos1, type), new Tag(pos2, type));
-            return field1.Text + " " + field2.Text;
+            TestName = "Simple Convert text to italic tag test")]
+        [TestCase("__apple pen__", 0, 11, TagType.Strong,
+            ExpectedResult = "<b>apple pen</b>",
+            TestName = "Simple Convert text to strong tag test")]
+        public string ConvertTwoFieldsToTag(string text, int pos1, int pos2, TagType type) {
+            var tag1 = new Tag(pos1, type);
+            var tag2 = new Tag(pos2, type);
+            base.ConvertTwoTagsToHtmlTags(ref text, tag1, tag2);
+            return text;
         }
     }
 }
