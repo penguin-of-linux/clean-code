@@ -6,8 +6,21 @@ using System.Text;
 namespace Markdown {
     public class Md {
         public Settings settings = new Settings("", "");
+
+        public void SetSettings(string baseURL, string CSSClass) {
+            settings = new Settings(baseURL, CSSClass);
+        }
+
         public string Render(string text) {
             if (IsUnderscoreString(text)) return text;
+
+            var result = ConvertAllTags(text);
+            result = InsertBreaks(result);
+            result = InsertParagraphs(result);
+
+            return result;
+        }
+        protected string ConvertAllTags(string text) {
             var tags = new Stack<Tag>();
             for(int i = 0; i < text.Length; i++) {
                 if (text[i] == '\\') {
@@ -17,8 +30,9 @@ namespace Markdown {
                 var tag = CreateTag(ref text, i);
                 if (tag == null) continue;
 
-                if (Tag.IsEndTag(text, tag.Pos)) {
-                    if (TryConvertTag(ref text, tags, tag)) continue;
+                if (Tag.IsEndTag(text, tag.Pos) && tags.Any(t => t.Type == tag.Type)) {
+                        text = ConvertTag(text, tags, tag);
+                        continue;
                 }
 
                 if (Tag.IsBeginTag(text, tag.Pos)) {
@@ -29,28 +43,22 @@ namespace Markdown {
             return text;
         }
 
-        private bool TryConvertTag(ref string text, Stack<Tag> tags, Tag tag) {
-            if (tags.Any(t => t.Type == tag.Type)) {
-                while (tags.Peek().Type != tag.Type) tags.Pop();
-                var otherTag = tags.Pop();
-                ConvertTwoTagsToHtmlTag(ref text, otherTag, tag);
-                return true;
-            }
-            return false;
+        private string ConvertTag(string text, Stack<Tag> tags, Tag tag) {
+            while (tags.Peek().Type != tag.Type) tags.Pop();
+            var otherTag = tags.Pop();
+            ConvertTwoTagsToHtmlTag(ref text, otherTag, tag);
+            return text;
         }
 
         private string CutLink(ref string text, int pos) {
             var result = new StringBuilder();
-            while (true) {
+            while (text[pos] != ')') {
                 result.Append(text[pos]);
                 text = text.Remove(pos, 1);
-                if (text[pos] == ')') {
-                    text = text.Remove(pos, 1);
-                    break;
-                }
             }
+            text = text.Remove(pos, 1);
             result = result.Replace(" ", "").Replace("(", "");
-            return String.Format(" href=\"{0}\"", result.ToString());
+            return $" href=\"{result.ToString()}\"";
         }
 
         protected void ConvertTwoTagsToHtmlTag(ref string text, Tag tag1, Tag tag2) {
@@ -106,6 +114,43 @@ namespace Markdown {
             }
                 
             return null;
+        }
+
+        protected string InsertParagraphs(string text) {
+            var result = new StringBuilder();
+            var beginTag = "<p>";
+            var endTag = "</p>";
+            for(int i = 0; i < text.Length; i++) {
+                if (i == 0) result.Append(beginTag);
+                var breakCount = 0;
+                var indentBeginPos = i;
+                while ((char.IsWhiteSpace(text[i]) || text[i] == '\n') && i < text.Length - 1) {
+                    if (text[i] == '\n') breakCount++;
+                        i++;
+                }
+                if (breakCount > 1) result.Append(endTag + beginTag);
+                else result.Append(text.Substring(indentBeginPos, i - indentBeginPos));
+
+                result.Append(text[i]);
+
+                if (i == text.Length - 1) result.Append(endTag);
+            }
+
+            return result.ToString();
+        }
+
+        protected string InsertBreaks(string text) {
+            var result = new StringBuilder();
+            var spaceCount = 0;
+            for (int i = 0; i < text.Length; i++) {
+                if (char.IsWhiteSpace(text[i])) spaceCount++;
+                if (text[i] == '\n' && spaceCount > 1) {
+                    result.Append("<br/>");
+                    break;
+                }
+                result.Append(text[i]);
+            }
+            return result.ToString();
         }
     }
 }

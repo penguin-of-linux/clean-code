@@ -6,8 +6,8 @@ namespace Markdown {
         public static readonly int ItalicTagLength = 1;
         public static readonly int StrongTagLength = 2;
         public static readonly int LinkTagLength = 1;
-        public static readonly char[] BeginTags = new char[] { '_', '[' };
-        public static readonly char[] CloseTags = new char[] { '_', ']' };
+        public static readonly char[] BeginTags = { '_', '[' };
+        public static readonly char[] CloseTags = { '_', ']' };
 
         public int Pos;
         public TagType Type;
