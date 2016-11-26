@@ -99,5 +99,22 @@ namespace MarkdownTests {
         public string InsertHeaders(string text) {
             return base.InsertHeaders(text);
         }
+
+        [TestCase("applepen\n\tcode", 
+            ExpectedResult = "applepen\n<pre><code>code</code></pre>",
+            TestName = "Simple code block insert test")]
+        [TestCase("    code1\n\t\tcode2\n    code3\n",
+            ExpectedResult = "<pre><code>code1\n\tcode2\ncode3</code></pre>",
+            TestName = "Hard code block insert test")]
+        public string InsertCodeBlocks(string text) {
+            return base.InsertCodeBlocks(text);
+        }
+
+        [TestCase("1.One\n2.Two\n3.Three", 
+            ExpectedResult = "<ol>\n<li>One</li>\n<li>Two</li>\n<li>Three</li>\n</ol>", 
+            TestName = "Simple lists insert test")]
+        public string InsertLists(string text) {
+            return base.InsertLists(text);
+        }
     }
 }

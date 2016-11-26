@@ -17,6 +17,8 @@ namespace Markdown {
             var result = ConvertAllTags(text);
             result = InsertBreaks(result);
             result = InsertParagraphs(result);
+            result = InsertHeaders(result);
+            result = InsertCodeBlocks(result);
 
             return result;
         }
@@ -116,8 +118,7 @@ namespace Markdown {
 
         protected string InsertHeaders(string text) {
             var result = new StringBuilder();
-            var lines = text.Split('\n');
-            foreach(var line in lines) {
+            foreach(var line in text.Split('\n')) {
                 var headerLevel = 0;
                 for (int i = 0; i < line.Length && line[i] == '#'; i++) headerLevel++;
                 if (headerLevel < 1 || headerLevel > 6) {
@@ -133,6 +134,74 @@ namespace Markdown {
                                             prost));
             }
             return result.Remove(result.Length-1, 1).ToString();
+        }
+
+        protected string InsertLists(string text) {
+            var result = new StringBuilder();
+            var inList = false;
+            foreach(var line in text.Split('\n')) {
+                if (IsListLine(line)) {
+                    if (!inList) {
+                        result.Append("<ol>\n");
+                        inList = true;
+                    }
+                    result.Append($"<li>{line.Substring(2)}</li>\n");
+                }
+                else {
+                    if (inList) {
+                        result.Append("</ol>\n");
+                        inList = false;
+                    }
+                    result.Append(line + "\n");
+                }
+            }
+            result = result.Remove(result.Length - 1, 1);
+            if (inList) result.Append("\n</ol>");
+            return result.ToString();
+        }
+
+        private bool IsListLine(string line) {
+            return line.Length > 1 && char.IsDigit(line[0]) && line[1] == '.';
+        }
+
+        protected string InsertCodeBlocks(string text) {
+            var result = new StringBuilder();
+            var inCodeBlock = false;
+            foreach(var line in text.Split('\n')) {
+                if (line == "") continue;
+                if (IsCodeBlockLine(line)) {
+                    if (!inCodeBlock) {
+                        result.Append("<pre><code>");
+                        inCodeBlock = true;
+                    }
+                    result.Append(ShortCodeBlockLine(line) + "\n");
+                }
+                else {
+                    if (inCodeBlock) {
+                        inCodeBlock = false;
+                        result.Append("</code></pre>");
+                    }
+                    result.Append(line + "\n");
+                }
+            }
+            result = result.Remove(result.Length - 1, 1);
+            if (inCodeBlock) result.Append("</code></pre>");
+            return result.ToString();
+        }
+
+        private bool IsCodeBlockLine(string line) {
+            var spacesCount = 0;
+            for(int i = 0; i < line.Length && char.IsWhiteSpace(line[i]); i++) {
+                if (line[i] == '\t') return true;
+                spacesCount++;
+                if (spacesCount == 4) return true;
+            }
+            return false;
+        }
+
+        private string ShortCodeBlockLine(string line) {
+            if (line[0] == ' ') return line.Substring(4);
+            return line.Substring(1);
         }
     }
 }
