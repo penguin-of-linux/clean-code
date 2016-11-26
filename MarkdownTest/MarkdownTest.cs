@@ -74,12 +74,9 @@ namespace MarkdownTests {
             return text;
         }
 
-        [TestCase("apple\n \t\n pen", 
-            ExpectedResult = "<p>apple</p><p>pen</p>",
+        [TestCase("apple\n\npen", 
+            ExpectedResult = "<p>\napple\n</p>\n<p>\npen\n</p>",
             TestName = "Simple insert paragraphs test")]
-        [TestCase("apple \n\n\n\n pen\n\n\n\n       pineapple\n  \t\t pen",
-            ExpectedResult = "<p>apple</p><p>pen</p><p>pineapple\n  \t\t pen</p>",
-            TestName = "Hard insert paragraphs test")]
         public string InsertParagraphs(string text) {
             return base.InsertParagraphs(text);
         }
@@ -100,14 +97,14 @@ namespace MarkdownTests {
             return base.InsertHeaders(text);
         }
 
-        [TestCase("applepen\n\tcode", 
-            ExpectedResult = "applepen\n<pre><code>code</code></pre>",
+        [TestCase("\tcode", 
+            ExpectedResult = "<pre><code>\ncode\n</code></pre>",
             TestName = "Simple code block insert test")]
         [TestCase("    code1\n\t\tcode2\n    code3\n",
-            ExpectedResult = "<pre><code>code1\n\tcode2\ncode3</code></pre>",
+            ExpectedResult = "<pre><code>\ncode1\n\tcode2\ncode3\n</code></pre>",
             TestName = "Hard code block insert test")]
         public string InsertCodeBlocks(string text) {
-            return base.InsertCodeBlocks(text);
+            return base.InsertCode(text);
         }
 
         [TestCase("1.One\n2.Two\n3.Three", 

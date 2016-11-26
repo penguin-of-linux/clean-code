@@ -15,10 +15,11 @@ namespace Markdown {
             if (IsUnderscoreString(text)) return text;
 
             var result = ConvertAllTags(text);
-            result = InsertBreaks(result);
-            result = InsertParagraphs(result);
+            result = InsertCode(result);
+            result = InsertLists(result);
             result = InsertHeaders(result);
-            result = InsertCodeBlocks(result);
+            result = InsertParagraphs(result);
+            result = InsertBreaks(result);
 
             return result;
         }
@@ -79,29 +80,6 @@ namespace Markdown {
         }
 
 
-        protected string InsertParagraphs(string text) {
-            var result = new StringBuilder();
-            var beginTag = "<p>";
-            var endTag = "</p>";
-            for(int i = 0; i < text.Length; i++) {
-                if (i == 0) result.Append(beginTag);
-                var breakCount = 0;
-                var indentBeginPos = i;
-                while ((char.IsWhiteSpace(text[i]) || text[i] == '\n') && i < text.Length - 1) {
-                    if (text[i] == '\n') breakCount++;
-                        i++;
-                }
-                if (breakCount > 1) result.Append(endTag + beginTag);
-                else result.Append(text.Substring(indentBeginPos, i - indentBeginPos));
-
-                result.Append(text[i]);
-
-                if (i == text.Length - 1) result.Append(endTag);
-            }
-
-            return result.ToString();
-        }
-
         protected string InsertBreaks(string text) {
             var result = new StringBuilder();
             var spaceCount = 0;
@@ -137,59 +115,55 @@ namespace Markdown {
         }
 
         protected string InsertLists(string text) {
+            return InsertBlockTags(text, "<ol>", "</ol>", "li", IsListLine);
+        }
+
+        protected string InsertParagraphs(string text) {
+            return InsertBlockTags(text, "<p>", "</p>", "", IsParagraphLine);
+        }
+
+        protected string InsertCode(string text) {
+            return InsertBlockTags(text, "<pre><code>", "</code></pre>", "", IsCodeLine);
+        }
+
+        private string InsertBlockTags(string text, 
+                                  string beginBlockTag,
+                                  string endBlockTag,
+                                  string lineTag,
+                                  Func<string, bool> IsLineInBlock) {
             var result = new StringBuilder();
-            var inList = false;
-            foreach(var line in text.Split('\n')) {
-                if (IsListLine(line)) {
-                    if (!inList) {
-                        result.Append("<ol>\n");
-                        inList = true;
+            var inBlock = false;
+            foreach (var line in text.Split('\n')) {
+                if (IsLineInBlock(line)) {
+                    if (!inBlock) {
+                        result.Append(beginBlockTag + "\n");
+                        inBlock = true;
                     }
-                    result.Append($"<li>{line.Substring(2)}</li>\n");
+                    if (lineTag == "") result.Append(ShortLine(line) + "\n");
+                    else result.Append(string.Format("<{0}>{1}</{0}>\n", lineTag, ShortLine(line)));
                 }
                 else {
-                    if (inList) {
-                        result.Append("</ol>\n");
-                        inList = false;
+                    if (inBlock) {
+                        result.Append(endBlockTag + "\n");
+                        inBlock = false;
                     }
-                    result.Append(line + "\n");
+                    if (line != "") result.Append(line + "\n");
                 }
             }
             result = result.Remove(result.Length - 1, 1);
-            if (inList) result.Append("\n</ol>");
+            if (inBlock) result.Append("\n" + endBlockTag);
             return result.ToString();
+        }
+
+        private bool IsParagraphLine(string line) {
+            return !string.IsNullOrWhiteSpace(line);
         }
 
         private bool IsListLine(string line) {
             return line.Length > 1 && char.IsDigit(line[0]) && line[1] == '.';
         }
 
-        protected string InsertCodeBlocks(string text) {
-            var result = new StringBuilder();
-            var inCodeBlock = false;
-            foreach(var line in text.Split('\n')) {
-                if (line == "") continue;
-                if (IsCodeBlockLine(line)) {
-                    if (!inCodeBlock) {
-                        result.Append("<pre><code>");
-                        inCodeBlock = true;
-                    }
-                    result.Append(ShortCodeBlockLine(line) + "\n");
-                }
-                else {
-                    if (inCodeBlock) {
-                        inCodeBlock = false;
-                        result.Append("</code></pre>");
-                    }
-                    result.Append(line + "\n");
-                }
-            }
-            result = result.Remove(result.Length - 1, 1);
-            if (inCodeBlock) result.Append("</code></pre>");
-            return result.ToString();
-        }
-
-        private bool IsCodeBlockLine(string line) {
+        private bool IsCodeLine(string line) {
             var spacesCount = 0;
             for(int i = 0; i < line.Length && char.IsWhiteSpace(line[i]); i++) {
                 if (line[i] == '\t') return true;
@@ -199,9 +173,11 @@ namespace Markdown {
             return false;
         }
 
-        private string ShortCodeBlockLine(string line) {
+        private string ShortLine(string line) {
             if (line[0] == ' ') return line.Substring(4);
-            return line.Substring(1);
+            if (line[0] == '\t') return line.Substring(1);
+            if (char.IsDigit(line[0]) && line[1] == '.') return line.Substring(2);
+            return line;
         }
     }
 }
