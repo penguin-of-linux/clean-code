@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-
+using System.Text;
 
 namespace Markdown {
     public class Tag {
@@ -29,6 +29,48 @@ namespace Markdown {
             return pos != 0
                 && !string.IsNullOrWhiteSpace(text[pos - 1].ToString())
                 && CloseTags.Contains(text[pos]);
+        }
+
+        private static bool IsTagStrong(string text, int pos) {
+            return text[pos] == '_' && pos < text.Length - 1 && text[pos + 1] == '_';
+        }
+
+        private static bool IsTagItalic(string text, int pos) {
+            return text[pos] == '_';
+        }
+
+
+        private static bool IsTagLink(string text, int pos) {
+            return text[pos] == '[' || text[pos] == ']';
+        }
+
+        public static Tag CreateTag(ref string text, int pos) {
+            if (IsTagStrong(text, pos))
+                return new Tag(pos, TagType.Strong);
+            if (IsTagItalic(text, pos))
+                return new Tag(pos, TagType.Italic);
+            if (IsTagLink(text, pos)) {
+                if (Tag.IsEndTag(text, pos)) {
+                    var i = pos;
+                    while (text[i + 1] != '(') i++;
+                    var advancedInfo = CutLink(ref text, i);
+                    return new Tag(pos, TagType.Link, advancedInfo);
+                }
+                return new Tag(pos, TagType.Link);
+            }
+
+            return null;
+        }
+
+        private static string CutLink(ref string text, int pos) {
+            var result = new StringBuilder();
+            while (text[pos] != ')') {
+                result.Append(text[pos]);
+                text = text.Remove(pos, 1);
+            }
+            text = text.Remove(pos, 1);
+            result = result.Replace(" ", "").Replace("(", "");
+            return $" href=\"{result.ToString()}\"";
         }
     }
 }

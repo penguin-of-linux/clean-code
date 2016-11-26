@@ -20,6 +20,11 @@ namespace Markdown {
 
             return result;
         }
+
+        private bool IsUnderscoreString(string text) {
+            return text.All(s => s == '_');
+        }
+
         protected string ConvertAllTags(string text) {
             var tags = new Stack<Tag>();
             for(int i = 0; i < text.Length; i++) {
@@ -27,7 +32,7 @@ namespace Markdown {
                     text = text.Remove(i, 1);
                     i++;
                 }
-                var tag = CreateTag(ref text, i);
+                var tag = Tag.CreateTag(ref text, i);
                 if (tag == null) continue;
 
                 if (Tag.IsEndTag(text, tag.Pos) && tags.Any(t => t.Type == tag.Type)) {
@@ -48,17 +53,6 @@ namespace Markdown {
             var otherTag = tags.Pop();
             ConvertTwoTagsToHtmlTag(ref text, otherTag, tag);
             return text;
-        }
-
-        private string CutLink(ref string text, int pos) {
-            var result = new StringBuilder();
-            while (text[pos] != ')') {
-                result.Append(text[pos]);
-                text = text.Remove(pos, 1);
-            }
-            text = text.Remove(pos, 1);
-            result = result.Replace(" ", "").Replace("(", "");
-            return $" href=\"{result.ToString()}\"";
         }
 
         protected void ConvertTwoTagsToHtmlTag(ref string text, Tag tag1, Tag tag2) {
@@ -82,39 +76,6 @@ namespace Markdown {
                 .Insert(tag2.Pos, htmlTag.Insert(1, "/"));
         }
 
-        private bool IsTagStrong(string field, int pos) {
-            return field[pos] == '_' && pos < field.Length - 1 && field[pos + 1] == '_';
-        }
-
-        private bool IsTagItalic(string field, int pos) {
-            return field[pos] == '_';
-        }
-
-        private bool IsUnderscoreString(string text) {
-            return text.All(s => s == '_');
-        }
-
-        private bool IsTagLink(string field, int pos) {
-            return field[pos] == '[' || field[pos] == ']';
-        }
-
-        private Tag CreateTag(ref string text, int pos) {
-            if (IsTagStrong(text, pos))
-                return new Tag(pos, TagType.Strong);
-            if (IsTagItalic(text, pos))
-                return new Tag(pos, TagType.Italic);
-            if (IsTagLink(text, pos)) {
-                if (Tag.IsEndTag(text, pos)) {
-                    var i = pos;
-                    while (text[i+1] != '(') i++;
-                    var advancedInfo = CutLink(ref text, i);
-                    return new Tag(pos, TagType.Link, advancedInfo);
-                }
-                return new Tag(pos, TagType.Link);
-            }
-                
-            return null;
-        }
 
         protected string InsertParagraphs(string text) {
             var result = new StringBuilder();
@@ -151,6 +112,27 @@ namespace Markdown {
                 result.Append(text[i]);
             }
             return result.ToString();
+        }
+
+        protected string InsertHeaders(string text) {
+            var result = new StringBuilder();
+            var lines = text.Split('\n');
+            foreach(var line in lines) {
+                var headerLevel = 0;
+                for (int i = 0; i < line.Length && line[i] == '#'; i++) headerLevel++;
+                if (headerLevel < 1 || headerLevel > 6) {
+                    result.Append(line + "\n");
+                    continue;
+                }
+
+                var endHeader = line.Length - 1;
+                while (line[endHeader] == '#') endHeader--;
+                var prost = line.Substring(headerLevel, endHeader - headerLevel + 1);
+                result.Append(string.Format("<h{0}>{1}</h{0}>\n", 
+                                            headerLevel, 
+                                            prost));
+            }
+            return result.Remove(result.Length-1, 1).ToString();
         }
     }
 }

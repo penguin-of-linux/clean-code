@@ -91,5 +91,13 @@ namespace MarkdownTests {
         public string InsertBreaks(string text) {
             return base.InsertBreaks(text);
         }
+
+        [TestCase("#apple\n", ExpectedResult = "<h1>apple</h1>\n", TestName = "Simple header insert")]
+        [TestCase("#header1 ## ##\n   #non-header1\n###header3#\ntext\n", 
+            ExpectedResult = "<h1>header1 ## </h1>\n   #non-header1\n<h3>header3</h3>\ntext\n",
+            TestName = "Hard headers insert test")]
+        public string InsertHeaders(string text) {
+            return base.InsertHeaders(text);
+        }
     }
 }
