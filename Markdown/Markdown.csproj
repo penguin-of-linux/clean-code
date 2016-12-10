@@ -43,9 +43,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LineType.cs" />
+    <Compile Include="MarkerConverter.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Tag.cs" />
-    <Compile Include="TagType.cs" />
+    <Compile Include="Marker.cs" />
+    <Compile Include="MarkerType.cs" />
     <Compile Include="Md.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

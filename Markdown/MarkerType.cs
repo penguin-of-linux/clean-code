@@ -1,5 +1,5 @@
 ﻿namespace Markdown {
-    public enum TagType {
+    public enum MarkerType {
         Italic,
         Strong,
         Link

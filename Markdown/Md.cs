@@ -14,145 +14,73 @@ namespace Markdown {
         public string Render(string text) {
             if (IsUnderscoreString(text)) return text;
 
-            var result = ConvertAllTags(text);
-            result = InsertCode(result);
-            result = InsertLists(result);
-            result = InsertHeaders(result);
-            result = InsertParagraphs(result);
-            result = InsertBreaks(result);
+            var result = new StringBuilder();
+            LineType oldLineType = LineType.Empty;
+            foreach(var line in text.Split('\n')) {
+                var type = GetLineType(line);
+                if (type != oldLineType) {
+                    result.Append(GetBlockEnd(oldLineType));
+                    result.Append(GetBlockBegin(type));
+                }
 
-            return result;
+                if (line != "") result.Append(GetCutedLine(line, type) + "\n");
+                oldLineType = type;
+            }
+            result.Append(GetBlockEnd(oldLineType));
+            return result.Remove(result.Length - 1, 1).ToString();
         }
 
         private bool IsUnderscoreString(string text) {
             return text.All(s => s == '_');
         }
 
-        protected string ConvertAllTags(string text) {
-            var tags = new Stack<Tag>();
-            for(int i = 0; i < text.Length; i++) {
-                if (text[i] == '\\') {
-                    text = text.Remove(i, 1);
-                    i++;
-                }
-                var tag = Tag.CreateTag(ref text, i);
-                if (tag == null) continue;
+        private LineType GetLineType(string line) {
+            if (IsCodeLine(line)) return LineType.Code;
+            if (IsListLine(line)) return LineType.List;
+            if (IsHeaderLine(line)) return LineType.Header;
+            if (IsParagraphLine(line)) return LineType.Paragraph;
+            if (line == string.Empty || string.IsNullOrWhiteSpace(line)) return LineType.Empty;
+            throw new Exception("Undefined line type");
+        }
 
-                if (Tag.IsEndTag(text, tag.Pos) && tags.Any(t => t.Type == tag.Type)) {
-                        text = ConvertTag(text, tags, tag);
-                        continue;
-                }
-
-                if (Tag.IsBeginTag(text, tag.Pos)) {
-                    tags.Push(tag);
-                }
+        private string GetBlockBegin(LineType type) {
+            switch (type) {
+                case LineType.Code: return "<pre><code>\n";
+                case LineType.List: return "<ol>\n";
+                case LineType.Paragraph: return "<p>\n";
+                default: return "";
             }
-            
-            return text;
         }
 
-        private string ConvertTag(string text, Stack<Tag> tags, Tag tag) {
-            while (tags.Peek().Type != tag.Type) tags.Pop();
-            var otherTag = tags.Pop();
-            ConvertTwoTagsToHtmlTag(ref text, otherTag, tag);
-            return text;
-        }
-
-        protected void ConvertTwoTagsToHtmlTag(ref string text, Tag tag1, Tag tag2) {
-            string htmlTag = null;
-            int tagLength = 0;
-            switch (tag1.Type) {
-                case TagType.Italic: htmlTag = "<i>"; tagLength = Tag.ItalicTagLength; break;
-                case TagType.Strong: htmlTag = "<b>"; tagLength = Tag.StrongTagLength; break;
-                case TagType.Link: htmlTag = "<a>"; tagLength = Tag.LinkTagLength; break;
+        private string GetCutedLine(string line, LineType type) {
+            switch (type) {
+                case LineType.Code:
+                    if (line[0] == ' ') return line.Substring(4);
+                    if (line[0] == '\t') return line.Substring(1);
+                    return line;
+                case LineType.List:
+                    var i = 0;
+                    while (line[i] != '.') i++;
+                    return $"<li>{line.Substring(++i)}</li>";
+                case LineType.Header:
+                    var headerLevel = 0;
+                    while (line[headerLevel] == '#') headerLevel++;
+                    i = line.Length - 1;
+                    while (line[i] == '#') i--;
+                    return MarkerConverter.ConvertLine(string.Format("<h{0}>{1}</h{0}>",
+                        headerLevel,
+                        line.Substring(headerLevel, i - headerLevel + 1)));
+                default: return MarkerConverter.ConvertLine(line);
             }
-            if (settings.CSSClass != "")
-                tag2.AdvancedInfo += String.Format(" class=\"{0}\"", settings.CSSClass);
-            tag2.Pos += tag2.AdvancedInfo.Length + 3 - tagLength;    //3 - length of html tag
-
-            text = text
-                .Remove(tag1.Pos, tagLength)
-                .Insert(tag1.Pos, htmlTag)
-                .Insert(tag1.Pos + 2, tag2.AdvancedInfo);
-            text = text
-                .Remove(tag2.Pos, tagLength)
-                .Insert(tag2.Pos, htmlTag.Insert(1, "/"));
         }
 
-
-        protected string InsertBreaks(string text) {
-            var result = new StringBuilder();
-            var spaceCount = 0;
-            for (int i = 0; i < text.Length; i++) {
-                if (char.IsWhiteSpace(text[i])) spaceCount++;
-                if (text[i] == '\n' && spaceCount > 1) {
-                    result.Append("<br/>");
-                    break;
-                }
-                result.Append(text[i]);
+        private string GetBlockEnd(LineType type) {
+            switch (type) {
+                case LineType.Code: return "</code></pre>\n";
+                case LineType.List: return "</ol>\n";
+                case LineType.Paragraph: return "</p>\n";
+                default: return "";
             }
-            return result.ToString();
-        }
-
-        protected string InsertHeaders(string text) {
-            var result = new StringBuilder();
-            foreach(var line in text.Split('\n')) {
-                var headerLevel = 0;
-                for (int i = 0; i < line.Length && line[i] == '#'; i++) headerLevel++;
-                if (headerLevel < 1 || headerLevel > 6) {
-                    result.Append(line + "\n");
-                    continue;
-                }
-
-                var endHeader = line.Length - 1;
-                while (line[endHeader] == '#') endHeader--;
-                var prost = line.Substring(headerLevel, endHeader - headerLevel + 1);
-                result.Append(string.Format("<h{0}>{1}</h{0}>\n", 
-                                            headerLevel, 
-                                            prost));
-            }
-            return result.Remove(result.Length-1, 1).ToString();
-        }
-
-        protected string InsertLists(string text) {
-            return InsertBlockTags(text, "<ol>", "</ol>", "li", IsListLine);
-        }
-
-        protected string InsertParagraphs(string text) {
-            return InsertBlockTags(text, "<p>", "</p>", "", IsParagraphLine);
-        }
-
-        protected string InsertCode(string text) {
-            return InsertBlockTags(text, "<pre><code>", "</code></pre>", "", IsCodeLine);
-        }
-
-        private string InsertBlockTags(string text, 
-                                  string beginBlockTag,
-                                  string endBlockTag,
-                                  string lineTag,
-                                  Func<string, bool> IsLineInBlock) {
-            var result = new StringBuilder();
-            var inBlock = false;
-            foreach (var line in text.Split('\n')) {
-                if (IsLineInBlock(line)) {
-                    if (!inBlock) {
-                        result.Append(beginBlockTag + "\n");
-                        inBlock = true;
-                    }
-                    if (lineTag == "") result.Append(ShortLine(line) + "\n");
-                    else result.Append(string.Format("<{0}>{1}</{0}>\n", lineTag, ShortLine(line)));
-                }
-                else {
-                    if (inBlock) {
-                        result.Append(endBlockTag + "\n");
-                        inBlock = false;
-                    }
-                    if (line != "") result.Append(line + "\n");
-                }
-            }
-            result = result.Remove(result.Length - 1, 1);
-            if (inBlock) result.Append("\n" + endBlockTag);
-            return result.ToString();
         }
 
         private bool IsParagraphLine(string line) {
@@ -165,7 +93,7 @@ namespace Markdown {
 
         private bool IsCodeLine(string line) {
             var spacesCount = 0;
-            for(int i = 0; i < line.Length && char.IsWhiteSpace(line[i]); i++) {
+            for (int i = 0; i < line.Length && char.IsWhiteSpace(line[i]); i++) {
                 if (line[i] == '\t') return true;
                 spacesCount++;
                 if (spacesCount == 4) return true;
@@ -173,11 +101,8 @@ namespace Markdown {
             return false;
         }
 
-        private string ShortLine(string line) {
-            if (line[0] == ' ') return line.Substring(4);
-            if (line[0] == '\t') return line.Substring(1);
-            if (char.IsDigit(line[0]) && line[1] == '.') return line.Substring(2);
-            return line;
+        private bool IsHeaderLine(string line) {
+            return line.Length > 0 && line[0] == '#';
         }
     }
 }

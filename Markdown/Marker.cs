@@ -2,7 +2,7 @@
 using System.Text;
 
 namespace Markdown {
-    public class Tag {
+    public class Marker {
         public static readonly int ItalicTagLength = 1;
         public static readonly int StrongTagLength = 2;
         public static readonly int LinkTagLength = 1;
@@ -10,13 +10,19 @@ namespace Markdown {
         public static readonly char[] CloseTags = { '_', ']' };
 
         public int Pos;
-        public TagType Type;
+        public MarkerType Type;
         public string AdvancedInfo;
+        public int Length;
 
-        public Tag(int pos, TagType type, string advancedInfo = "") {
+        public Marker(int pos, MarkerType type, string advancedInfo = "") {
             Pos = pos;
             Type = type;
             AdvancedInfo = advancedInfo;
+            switch (type) {
+                case MarkerType.Italic:
+                case MarkerType.Link: Length = 1; break;
+                case MarkerType.Strong: Length = 2; break;
+            }
         }
 
         public static bool IsBeginTag(string text, int pos) {
@@ -44,19 +50,19 @@ namespace Markdown {
             return text[pos] == '[' || text[pos] == ']';
         }
 
-        public static Tag CreateTag(ref string text, int pos) {
+        public static Marker CreateTag(ref string text, int pos) {
             if (IsTagStrong(text, pos))
-                return new Tag(pos, TagType.Strong);
+                return new Marker(pos, MarkerType.Strong);
             if (IsTagItalic(text, pos))
-                return new Tag(pos, TagType.Italic);
+                return new Marker(pos, MarkerType.Italic);
             if (IsTagLink(text, pos)) {
-                if (Tag.IsEndTag(text, pos)) {
+                if (Marker.IsEndTag(text, pos)) {
                     var i = pos;
                     while (text[i + 1] != '(') i++;
                     var advancedInfo = CutLink(ref text, i);
-                    return new Tag(pos, TagType.Link, advancedInfo);
+                    return new Marker(pos, MarkerType.Link, advancedInfo);
                 }
-                return new Tag(pos, TagType.Link);
+                return new Marker(pos, MarkerType.Link);
             }
 
             return null;
